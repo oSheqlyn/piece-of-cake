@@ -1,23 +1,28 @@
-Piece of Cake 🍰
+**# 🍰 Piece of Cake
 
-Piece of Cake is a fun, browser-based stacking game built using Phaser.js. Players aim to stack cake layers as perfectly as possible to achieve a high score. The game features smooth animations, responsive controls, and increasing difficulty as you stack more layers.
+**Piece of Cake** is a fun, fast-paced stacking game built with Phaser 3. The goal is to stack cake layers perfectly on top of each other to reach the highest score possible.  
 
-Features
+---
 
-Simple click-to-drop mechanics for stacking cake layers
+## Features
+- Simple and intuitive click-to-drop gameplay  
+- Increasing difficulty: layers move faster as your score rises  
+- Colorful, randomized cake layers for a visually appealing experience  
+- Score tracking and game-over detection  
+- Responsive canvas, works on desktop and mobile browsers  
 
-Increasing speed and challenge with each successful layer
+---
 
-Colorful, randomized cake layers for visual variety
+## Tech Stack
+- **Game Engine:** Phaser 3  
+- **Languages:** HTML, CSS, JavaScript  
+- **Graphics:** Canvas-based rectangles for game layers  
+- Fully client-side, no backend required  
 
-Score tracking and “Game Over” screen with restart option
+---
 
-Lightweight, browser-compatible using Phaser.js
-
-Tech Stack
-
-Frontend & Game Engine: Phaser 3 (JavaScript)
-
-Languages: HTML, CSS, JavaScript
-
-Physics: Arcade physics for moving layers
+## Installation
+1. Clone the repository:  
+```bash
+git clone https://github.com/your-username/piece-of-cake.git
+**
