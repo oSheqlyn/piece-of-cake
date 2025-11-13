@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Piece of Cake 🍰</title>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: 'Fredoka', sans-serif;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .bg-decoration {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.1;
+      animation: float 20s infinite ease-in-out;
+    }
+    
+    .bg-decoration:nth-child(1) {
+      width: 300px;
+      height: 300px;
+      background: white;
+      top: -100px;
+      left: -100px;
+      animation-delay: 0s;
+    }
+    
+    .bg-decoration:nth-child(2) {
+      width: 200px;
+      height: 200px;
+      background: white;
+      bottom: -50px;
+      right: -50px;
+      animation-delay: 7s;
+    }
+    
+    .bg-decoration:nth-child(3) {
+      width: 150px;
+      height: 150px;
+      background: white;
+      top: 50%;
+      right: 10%;
+      animation-delay: 3s;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      33% { transform: translate(30px, -30px) rotate(120deg); }
+      66% { transform: translate(-20px, 20px) rotate(240deg); }
+    }
+    
+    #game-container {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      z-index: 1;
+    }
+    
+    #stats-bar {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 20px 40px;
+      border-radius: 25px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      display: flex;
+      gap: 40px;
+      align-items: center;
+      animation: slideDown 0.6s ease-out;
+    }
+    
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .stat-label {
+      font-size: 14px;
+      color: #666;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .stat-value {
+      font-size: 32px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    canvas {
+      border-radius: 25px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: scaleIn 0.6s ease-out;
+      background: linear-gradient(180deg, #ffffff 0%, #fef4f8 100%);
+    }
+    
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    
+    #instructions {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 15px 30px;
+      border-radius: 20px;
+      color: #555;
+      font-size: 16px;
+      font-weight: 500;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-decoration"></div>
+  <div class="bg-decoration"></div>
+  <div class="bg-decoration"></div>
+  
+  <div id="game-container">
+    <div id="stats-bar">
+      <div class="stat-item">
+        <div class="stat-label">Score</div>
+        <div class="stat-value" id="score-display">0</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Best</div>
+        <div class="stat-value" id="best-display">0</div>
+      </div>
+    </div>
+    <div id="game"></div>
+    <div id="instructions">🎯 Click to stack perfectly!</div>
+  </div>
+
+  <script>
+    const config = {
+      type: Phaser.AUTO,
+      width: 400,
+      height: 600,
+      parent: 'game',
+      backgroundColor: "#ffffff",
+      physics: { 
+        default: "arcade", 
+        arcade: { gravity: { y: 0 }, debug: false } 
+      },
+      scene: { preload, create, update },
+    };
+
+    let game = new Phaser.Game(config);
+    let current, stack = [];
+    let speed = 150;
+    let score = 0;
+    let bestScore = parseInt(localStorage.getItem('cakeBestScore')) || 0;
+    let started = false;
+    let gameOver = false;
+    let comboCount = 0;
+    let particles;
+
+    const scoreDisplay = document.getElementById('score-display');
+    const bestDisplay = document.getElementById('best-display');
+    const instructions = document.getElementById('instructions');
+    
+    bestDisplay.textContent = bestScore;
+
+    function preload() {}
+
+    function create(data) {
+      particles = this.add.particles(null);
+      
+      if (data && data.started) {
+        started = true;
+        startGame(this);
+      } else {
+        started = false;
+        showTitleScreen(this);
+      }
+    }
+
+    function showTitleScreen(scene) {
+      const title = scene.add.text(200, 180, '🍰 Piece of Cake', {
+        font: '700 42px Fredoka',
+        fill: '#667eea',
+        align: 'center'
+      }).setOrigin(0.5);
+      
+      title.setStroke('#ffffff', 8);
+      title.setShadow(0, 4, '#00000033', 5);
+      
+      const subtitle = scene.add.text(200, 240, 'Stack the layers perfectly!', {
+        font: '500 18px Fredoka',
+        fill: '#764ba2',
+        align: 'center'
+      }).setOrigin(0.5);
+      
+      const startBtn = scene.add.rectangle(200, 320, 200, 60, 0x667eea, 1);
+      startBtn.setStrokeStyle(3, 0xffffff);
+      startBtn.setInteractive({ useHandCursor: true });
+      
+      const startText = scene.add.text(200, 320, 'START GAME', {
+        font: '700 20px Fredoka',
+        fill: '#ffffff'
+      }).setOrigin(0.5);
+      
+      startBtn.on('pointerover', () => {
+        scene.tweens.add({
+          targets: [startBtn, startText],
+          scaleX: 1.1,
+          scaleY: 1.1,
+          duration: 200,
+          ease: 'Back.easeOut'
+        });
+      });
+      
+      startBtn.on('pointerout', () => {
+        scene.tweens.add({
+          targets: [startBtn, startText],
+          scaleX: 1,
+          scaleY: 1,
+          duration: 200
+        });
+      });
+      
+      startBtn.on('pointerdown', () => {
+        scene.tweens.add({
+          targets: [title, subtitle, startBtn, startText],
+          alpha: 0,
+          y: '+=50',
+          duration: 300,
+          onComplete: () => scene.scene.restart({ started: true })
+        });
+      });
+      
+      scene.tweens.add({
+        targets: title,
+        y: 170,
+        duration: 1500,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+    }
+
+    function startGame(scene) {
+      score = 0;
+      gameOver = false;
+      stack = [];
+      speed = 150;
+      comboCount = 0;
+      
+      updateScore(0);
+      instructions.textContent = '🎯 Click to stack perfectly!';
+
+      const baseY = 550;
+      const layerHeight = 30;
+      const baseWidth = 200;
+
+      const base = scene.add.rectangle(200, baseY, baseWidth, layerHeight, 0xffb7ce);
+      base.setStrokeStyle(2, 0xffffff, 0.5);
+      stack.push(base);
+
+      current = scene.add.rectangle(0, baseY - layerHeight, baseWidth, layerHeight, 0xff9eb7);
+      current.setStrokeStyle(2, 0xffffff, 0.5);
+      scene.physics.add.existing(current);
+      current.body.setVelocityX(speed);
+
+      scene.input.on('pointerdown', () => {
+        if (gameOver) {
+          scene.scene.restart({ started: true });
+        } else {
+          dropLayer.call(scene);
+        }
+      });
+    }
+
+    function update() {
+      if (!started || gameOver) return;
+
+      if (current.x > 400 - current.width / 2) current.body.setVelocityX(-speed);
+      else if (current.x < current.width / 2) current.body.setVelocityX(speed);
+    }
+
+    function dropLayer() {
+      const prev = stack[stack.length - 1];
+      const diff = current.x - prev.x;
+      const overlap = prev.width - Math.abs(diff);
+
+      if (overlap <= 0) {
+        return endGame.call(this);
+      }
+
+      const precision = overlap / prev.width;
+      const isPerfect = precision > 0.95;
+      
+      if (isPerfect) {
+        comboCount++;
+        createPerfectEffect.call(this, current.x, current.y);
+      } else {
+        comboCount = 0;
+      }
+
+      const newWidth = overlap;
+      const newX = prev.x + diff / 2;
+
+      current.destroy();
+      
+      const hue = (score * 30) % 360;
+      const color = Phaser.Display.Color.HSVToRGB(hue / 360, 0.7, 0.95).color;
+
+      const placed = this.add.rectangle(newX, prev.y - 30, newWidth, 30, color);
+      placed.setStrokeStyle(2, 0xffffff, 0.5);
+      
+      this.tweens.add({
+        targets: placed,
+        scaleY: 1.2,
+        duration: 100,
+        yoyo: true,
+        ease: 'Quad.easeOut'
+      });
+      
+      stack.push(placed);
+
+      const nextY = placed.y - 30;
+      if (nextY < 50) return endGame.call(this);
+
+      const next = this.add.rectangle(0, nextY, newWidth, 30, color);
+      next.setStrokeStyle(2, 0xffffff, 0.5);
+      this.physics.add.existing(next);
+      next.body.setVelocityX(speed * (Math.random() < 0.5 ? 1 : -1));
+      current = next;
+
+      score++;
+      updateScore(score);
+      speed += 3;
+      
+      if (isPerfect) {
+        createParticles.call(this, newX, prev.y - 30);
+      }
+    }
+
+    function createPerfectEffect(x, y) {
+      const perfect = this.add.text(x, y - 40, '✨PERFECT✨', {
+        font: '700 20px Fredoka',
+        fill: '#FFD700'
+      }).setOrigin(0.5);
+      perfect.setStroke('#ffffff', 4);
+      
+      this.tweens.add({
+        targets: perfect,
+        y: y - 80,
+        alpha: 0,
+        scale: 1.5,
+        duration: 800,
+        ease: 'Cubic.easeOut',
+        onComplete: () => perfect.destroy()
+      });
+    }
+
+    function createParticles(x, y) {
+      const colors = [0xFFD700, 0xFF69B4, 0x00FFFF, 0xFF1493];
+      
+      for (let i = 0; i < 8; i++) {
+        const angle = (Math.PI * 2 * i) / 8;
+        const particle = this.add.circle(x, y, 5, colors[i % colors.length]);
+        
+        this.tweens.add({
+          targets: particle,
+          x: x + Math.cos(angle) * 50,
+          y: y + Math.sin(angle) * 50,
+          alpha: 0,
+          scale: 0,
+          duration: 600,
+          ease: 'Cubic.easeOut',
+          onComplete: () => particle.destroy()
+        });
+      }
+    }
+
+    function updateScore(newScore) {
+      scoreDisplay.textContent = newScore;
+      
+      if (newScore > bestScore) {
+        bestScore = newScore;
+        bestDisplay.textContent = bestScore;
+        localStorage.setItem('cakeBestScore', bestScore);
+      }
+    }
+
+    function endGame() {
+      gameOver = true;
+      current.body.setVelocityX(0);
+      
+      instructions.textContent = '💫 Click to play again!';
+      
+      const overlay = this.add.rectangle(200, 300, 400, 600, 0x000000, 0.7);
+      overlay.setInteractive();
+      
+      const panel = this.add.rectangle(200, 300, 350, 400, 0xffffff);
+      panel.setStrokeStyle(5, 0x667eea);
+      
+      const gameOverText = this.add.text(200, 180, 'Game Over!', {
+        font: '700 48px Fredoka',
+        fill: '#667eea'
+      }).setOrigin(0.5);
+      gameOverText.setStroke('#ffffff', 8);
+      
+      const finalScore = this.add.text(200, 260, `Score: ${score}`, {
+        font: '600 32px Fredoka',
+        fill: '#764ba2'
+      }).setOrigin(0.5);
+      
+      const bestText = this.add.text(200, 310, `Best: ${bestScore}`, {
+        font: '500 24px Fredoka',
+        fill: '#888'
+      }).setOrigin(0.5);
+      
+      const restartBtn = this.add.rectangle(200, 400, 220, 60, 0x667eea);
+      restartBtn.setStrokeStyle(3, 0xffffff);
+      restartBtn.setInteractive({ useHandCursor: true });
+      
+      const restartText = this.add.text(200, 400, '🔄 PLAY AGAIN', {
+        font: '700 20px Fredoka',
+        fill: '#ffffff'
+      }).setOrigin(0.5);
+      
+      [overlay, panel, gameOverText, finalScore, bestText, restartBtn, restartText].forEach(obj => {
+        obj.setAlpha(0);
+        obj.setScale(0.8);
+      });
+      
+      this.tweens.add({
+        targets: [overlay, panel, gameOverText, finalScore, bestText, restartBtn, restartText],
+        alpha: 1,
+        scale: 1,
+        duration: 400,
+        ease: 'Back.easeOut'
+      });
+      
+      restartBtn.on('pointerover', () => {
+        this.tweens.add({
+          targets: [restartBtn, restartText],
+          scaleX: 1.1,
+          scaleY: 1.1,
+          duration: 200,
+          ease: 'Back.easeOut'
+        });
+      });
+      
+      restartBtn.on('pointerout', () => {
+        this.tweens.add({
+          targets: [restartBtn, restartText],
+          scaleX: 1,
+          scaleY: 1,
+          duration: 200
+        });
+      });
+      
+      overlay.on('pointerdown', () => {
+        this.scene.restart({ started: true });
+      });
+    }
+  </script>
+</body>
+</html>
