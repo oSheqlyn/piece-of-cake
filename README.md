@@ -1,4 +1,4 @@
-**# 🍰 Piece of Cake
+🍰 Piece of Cake
 
 **Piece of Cake** is a fun, fast-paced stacking game built with Phaser 3. The goal is to stack cake layers perfectly on top of each other to reach the highest score possible.  
 
